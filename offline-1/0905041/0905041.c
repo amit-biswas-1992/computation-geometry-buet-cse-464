@@ -12,23 +12,44 @@ typedef	int tPointi[DIM];
 typedef	struct tVertexStructure tsVertex;
 typedef	tsVertex *tVertex;
 
-struct	tVertexStructure {
-   int		vnum;	
-   tPointi	v;	
-   bool 	ear;	
-   tVertex 	next,prev;
+char *malloc();
+#define NEW(p, type) \
+      if ((p=(type *) malloc (sizeof(type))) == NULL) {\
+      printf ("NEW: Out of Memory!\n");\
+      exit(EXIT_FAILURE);\
+}
+
+#define ADD( head, p )  if ( head )  { \
+       p->next = head; \
+       p->prev = head->prev; \
+       head->prev = p; \
+       p->prev->next = p; \
+    } \
+    else { \
+       head = p; \
+       head->next = head->prev = p; \
+    }
+
+#define FREE(p) if (p) {free ((char *) p); p = NULL; }
+
+struct tVertexStructure {
+   int vnum;	
+   tPointi v;	
+   bool ear;	
+   tVertex next,prev;
 };
 
 
+//Initialize
 tVertex	vertices  = NULL;
 int	nvertices = 0;	
 
 
 
 
-int	AreaPoly2( void );
-void	Triangulate( void );
-void	EarInit( void );
+int	AreaPoly2();
+void	Triangulate();
+void	EarInit();
 bool	Diagonal( tVertex a, tVertex b );
 bool	Diagonalie( tVertex a, tVertex b );
 bool	InCone( tVertex a, tVertex b );
@@ -43,187 +64,24 @@ bool	Between( tPointi a, tPointi b, tPointi c );
 bool	Intersect( tPointi a, tPointi b, tPointi c, tPointi d );
 bool	IntersectProp( tPointi a, tPointi b, tPointi c, tPointi d );
 
-tVertex	MakeNullVertex( void );
-void	ReadVertices( void );
-void	PrintVertices( void );
+tVertex	MakeNullVertex();
+void	ReadVertices();
+void	PrintVertices();
 void	PrintDiagonal( tVertex a, tVertex b );
-void	PrintPoly( void );
+void	PrintPoly();
 
-
-#define NEW(p, type) if ((p=(type *) malloc (sizeof(type))) == NULL) {\
-      printf ("NEW: Out of Memory!\n");\
-      exit(EXIT_FAILURE);\
-    }
-
-#define ADD( head, p )  if ( head )  { \
-       p->next = head; \
-       p->prev = head->prev; \
-       head->prev = p; \
-       p->prev->next = p; \
-    } \
-    else { \
-       head = p; \
-       head->next = head->prev = p; \
-    }
 
 
 int main()
 {
    ReadVertices();
    PrintVertices();
-   printf("%%Area of polygon = %g\n", 0.5 * AreaPoly2() );
+   printf("Area of Polygon = %g\n", 0.5 * AreaPoly2() );
    Triangulate();
    return 0;
 }
 
-
-int     Area2( tPointi a, tPointi b, tPointi c )
-{
-   return
-          (b[X] - a[X]) * (c[Y] - a[Y]) -
-          (c[X] - a[X]) * (b[Y] - a[Y]);
-}
-
-
-
-bool	Xor( bool x, bool y )
-{
-   return   !x ^ !y;
-}
-
-
-bool	IntersectProp( tPointi a, tPointi b, tPointi c, tPointi d )
-{
-   
-   if (
-      Collinear(a,b,c) ||
-      Collinear(a,b,d) ||
-      Collinear(c,d,a) ||
-      Collinear(c,d,b)
-      )
-      return FALSE;
-
-   return
-         Xor( Left(a,b,c), Left(a,b,d) )
-      && Xor( Left(c,d,a), Left(c,d,b) );
-}
-
-
-bool	Left( tPointi a, tPointi b, tPointi c )
-{ 
-   return  AreaSign( a, b, c ) > 0;
-}
-
-bool	LeftOn( tPointi a, tPointi b, tPointi c )
-{
-   return  AreaSign( a, b, c ) >= 0;
-}
-
-bool	Collinear( tPointi a, tPointi b, tPointi c )
-{
-   return  AreaSign( a, b, c ) == 0;
-}
-
-
-bool	Between( tPointi a, tPointi b, tPointi c )
-{
-
-   if ( ! Collinear( a, b, c ) )
-      return  FALSE;
-
-   if ( a[X] != b[X] ) 
-      return ((a[X] <= c[X]) && (c[X] <= b[X])) ||
-             ((a[X] >= c[X]) && (c[X] >= b[X]));
-   else
-      return ((a[Y] <= c[Y]) && (c[Y] <= b[Y])) ||
-             ((a[Y] >= c[Y]) && (c[Y] >= b[Y]));
-}
-
-
-bool	Intersect( tPointi a, tPointi b, tPointi c, tPointi d )
-{
-   if      ( IntersectProp( a, b, c, d ) )
-      return  TRUE;
-   else if (   Between( a, b, c )
-            || Between( a, b, d )
-            || Between( c, d, a )
-            || Between( c, d, b )
-           )
-      return  TRUE;
-   else    return  FALSE;
-}
-
-
-bool   Diagonalie( tVertex a, tVertex b )
-{
-   tVertex c, c1;
-
-   c = vertices;
-   do {
-      c1 = c->next;
-     
-      if (    ( c != a ) && ( c1 != a )
-           && ( c != b ) && ( c1 != b )
-           && Intersect( a->v, b->v, c->v, c1->v )
-         )
-         return FALSE;
-      c = c->next;
-   } while ( c != vertices );
-   return TRUE;
-}
-
-
-void   EarInit( void )
-{
-   printf("\nEarInit started");
-
-   tVertex v0, v1, v2;  
-
-   v1 = vertices;
-   do {
-      v2 = v1->next;
-      v0 = v1->prev;
-      v1->ear = Diagonal( v0, v2 );
-      v1 = v1->next;
-   } while ( v1 != vertices );
-
-   printf("\nEarInit completed\n");
-
-}
-
-
-
-
-
-
-
-
-bool   InCone( tVertex a, tVertex b )
-{
-   tVertex a0,a1;
-
-   a1 = a->next;
-   a0 = a->prev;
-
-  
-   if( LeftOn( a->v, a1->v, a0->v ) )
-       return    Left( a->v, b->v, a0->v )
-              && Left( b->v, a->v, a1->v );
-
-  
-       return !(    LeftOn( a->v, b->v, a1->v )
-                 && LeftOn( b->v, a->v, a0->v ) );
-}
-
-
-bool	Diagonal( tVertex a, tVertex b )
-{
-   return InCone( a, b ) && InCone( b, a ) && Diagonalie( a, b );
-}
-
-
-
-void   ReadVertices( void )
+void   ReadVertices()
 {
    tVertex	v;
    int		x, y;
@@ -247,7 +105,7 @@ void   ReadVertices( void )
       
 }
 
-void   PrintVertices( void )
+void  PrintVertices()
 {
    tVertex  v;
    printf("\nTotal Vertices = %d\n", nvertices);
@@ -261,7 +119,7 @@ void   PrintVertices( void )
 
 }
 
-void   Triangulate( void )
+void  Triangulate()
 {
    tVertex v0, v1, v2, v3, v4;
    int   n = nvertices;	
@@ -270,7 +128,6 @@ void   Triangulate( void )
 
    EarInit();
    
-
    while ( n > 3 ) {     
      
       v2 = vertices;
@@ -325,6 +182,23 @@ void   Triangulate( void )
    }
 }
 
+void   EarInit()
+{
+   printf("\nEarInit started");
+
+   tVertex v0, v1, v2;  
+
+   v1 = vertices;
+   do {
+      v2 = v1->next;
+      v0 = v1->prev;
+      v1->ear = Diagonal( v0, v2 );
+      v1 = v1->next;
+   } while ( v1 != vertices );
+
+   printf("\nEarInit completed\n");
+}
+
 void	PrintDiagonal( tVertex a, tVertex b )
 {
    printf("Diagonal Vertices Ids: (%d,%d)\n", a->vnum, b->vnum );
@@ -332,7 +206,109 @@ void	PrintDiagonal( tVertex a, tVertex b )
 }
 
 
-tVertex   MakeNullVertex( void )
+bool	Diagonal( tVertex a, tVertex b )
+{
+   return InCone( a, b ) && InCone( b, a ) && Diagonalie( a, b );
+}
+
+bool InCone( tVertex a, tVertex b )
+{
+   tVertex a0,a1;
+   
+   a1 = a->next;
+   a0 = a->prev;
+
+  if( LeftOn( a->v, a1->v, a0->v ) )
+       return    Left( a->v, b->v, a0->v )
+              && Left( b->v, a->v, a1->v );
+
+  
+       return !( LeftOn( a->v, b->v, a1->v )
+                 && LeftOn( b->v, a->v, a0->v ) );
+}
+
+
+bool   Diagonalie( tVertex a, tVertex b )
+{
+   tVertex c, c1;
+
+   c = vertices;
+   do {
+      c1 = c->next;
+     
+      if ( ( c != a ) && ( c1 != a )
+           && ( c != b ) && ( c1 != b )
+           && Intersect( a->v, b->v, c->v, c1->v )
+         )
+         return FALSE;
+      c = c->next;
+   } while ( c != vertices );
+   return TRUE;
+}
+
+
+
+bool	Intersect( tPointi a, tPointi b, tPointi c, tPointi d )
+{
+   if(IntersectProp( a, b, c, d )){
+      return  TRUE;
+   }
+      
+   else if (   Between( a, b, c ) || Between( a, b, d )
+            || Between( c, d, a ) || Between( c, d, b )
+           )
+      return  TRUE;
+   else   return  FALSE;
+}
+
+bool	IntersectProp( tPointi a, tPointi b, tPointi c, tPointi d )
+{
+   if (
+      Collinear(a,b,c) || Collinear(a,b,d) ||
+      Collinear(c,d,a) || Collinear(c,d,b)
+      )
+      return FALSE;
+
+   return
+         Xor( Left(a,b,c), Left(a,b,d) )
+      && Xor( Left(c,d,a), Left(c,d,b) );
+}
+
+bool	Xor( bool x, bool y )
+{
+   return !x ^ !y;
+}
+
+bool Collinear( tPointi a, tPointi b, tPointi c )
+{
+   return  AreaSign( a, b, c ) == 0;
+}
+
+bool Left( tPointi a, tPointi b, tPointi c )
+{ 
+   return  AreaSign( a, b, c ) > 0;
+}
+
+bool LeftOn( tPointi a, tPointi b, tPointi c )
+{
+   return  AreaSign( a, b, c ) >= 0;
+}
+
+bool	Between( tPointi a, tPointi b, tPointi c )
+{
+
+   if ( ! Collinear( a, b, c ) )
+      return  FALSE;
+
+   if ( a[X] != b[X] ) 
+      return ((a[X] <= c[X]) && (c[X] <= b[X])) ||
+             ((a[X] >= c[X]) && (c[X] >= b[X]));
+   else
+      return ((a[Y] <= c[Y]) && (c[Y] <= b[Y])) ||
+             ((a[Y] >= c[Y]) && (c[Y] >= b[Y]));
+}
+
+tVertex  MakeNullVertex()
 {
    tVertex  v;
    NEW( v, tsVertex );
@@ -341,10 +317,7 @@ tVertex   MakeNullVertex( void )
 }
 
 
-
-
-
-int	AreaPoly2( void )
+int	AreaPoly2()
 {
    int     sum = 0;
    tVertex p, a;
@@ -358,7 +331,13 @@ int	AreaPoly2( void )
    return sum;
 
 }
-int     AreaSign( tPointi a, tPointi b, tPointi c )
+
+int Area2( tPointi a, tPointi b, tPointi c )
+{
+   return (b[X] - a[X]) * (c[Y] - a[Y]) - (c[X] - a[X]) * (b[Y] - a[Y]);
+}
+
+int AreaSign( tPointi a, tPointi b, tPointi c )
 {
     double area2;
 
