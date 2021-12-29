@@ -73,7 +73,6 @@ int main()
    PrintVertices();
    printf("%%Area of polygon = %g\n", 0.5 * AreaPoly2() );
    Triangulate();
-   printf("showpage\n%%%%EOF\n");
    return 0;
 }
 
@@ -128,12 +127,10 @@ bool	Collinear( tPointi a, tPointi b, tPointi c )
 
 bool	Between( tPointi a, tPointi b, tPointi c )
 {
-   tPointi	ba, ca;
 
    if ( ! Collinear( a, b, c ) )
       return  FALSE;
 
-  
    if ( a[X] != b[X] ) 
       return ((a[X] <= c[X]) && (c[X] <= b[X])) ||
              ((a[X] >= c[X]) && (c[X] >= b[X]));
@@ -178,77 +175,26 @@ bool   Diagonalie( tVertex a, tVertex b )
 
 void   EarInit( void )
 {
+   printf("\nEarInit started");
+
    tVertex v0, v1, v2;  
 
    v1 = vertices;
-   printf("newpath\n");
    do {
       v2 = v1->next;
       v0 = v1->prev;
       v1->ear = Diagonal( v0, v2 );
       v1 = v1->next;
    } while ( v1 != vertices );
-   printf("closepath stroke\n\n");
+
+   printf("\nEarInit completed\n");
 
 }
 
 
 
 
-void   Triangulate( void )
-{
-   tVertex v0, v1, v2, v3, v4;
-   int   n = nvertices;	
-   bool earfound;	
 
-   EarInit();
-   printf("\nnewpath\n");
-   printf("value of n: %d\n",n);
-
-   while ( n > 3 ) {     
-     
-      v2 = vertices;
-      earfound = FALSE;
-	  int i = 0;
-	  int j = 0;
-      do {
-		  printf(" i: %d\n",i++);
-         if (v2->ear) {
-			 printf("j: %d\n",j++);
-
-            earfound = TRUE;
-           
-            v3 = v2->next; v4 = v3->next;
-            v1 = v2->prev; v0 = v1->prev;
-
-           
-            PrintDiagonal( v1, v3 );
-            
-           
-            v1->ear = Diagonal( v0, v3 );
-            v3->ear = Diagonal( v1, v4 );
-            
-           
-            v1->next = v3;
-            v3->prev = v1;
-            vertices = v3;
-            n--;
-
-			printf(" n: %d\n",n);
-            break;  
-         }
-         v2 = v2->next;
-      } while ( v2 != vertices );
-
-      if ( !earfound ) {
-         printf("%%Error in Triangulate:  No ear found.\n");
-         PrintPoly();
-         printf("showpage\n%%%%EOF\n");
-         exit(EXIT_FAILURE);
-      }
-   }
-   printf("closepath stroke\n\n");
-}
 
 
 
@@ -291,87 +237,112 @@ void   ReadVertices( void )
    }
 
    nvertices = vnum;
-   printf("total no of vervices:%d \n",vnum);
-   if (nvertices < 3) 
-      printf("%%Error in ReadVertices: nvertices=%d<3\n", nvertices),
+
+   printf("Total Vertices:%d \n",vnum);
+
+   if (nvertices < 3) {
+      printf("Vertices cannot be less than 3.\n");
       exit(EXIT_FAILURE);
+   }
+      
 }
+
+void   PrintVertices( void )
+{
+   tVertex  v;
+   printf("\nTotal Vertices = %d\n", nvertices);
+
+   v = vertices;
+   
+   do {                                 
+      printf("Vertex Id= %d, position=(x,y): (%d,%d)\n", v->vnum, v->v[X], v->v[Y] );
+      v = v->next;
+   } while ( v != vertices );
+
+}
+
+void   Triangulate( void )
+{
+   tVertex v0, v1, v2, v3, v4;
+   int   n = nvertices;	
+   
+   bool earfound;	
+
+   EarInit();
+   
+
+   while ( n > 3 ) {     
+     
+      v2 = vertices;
+      earfound = FALSE;
+	  
+      do {
+
+         printf("Current vertex: %d,  ear? : %d\n", v2->vnum, v2->ear);
+
+         if (v2->ear) {
+
+            earfound = TRUE;
+           
+            v3 = v2->next; v4 = v3->next;
+            v1 = v2->prev; v0 = v1->prev;
+
+            PrintDiagonal( v1, v3 );
+            
+            v1->ear = Diagonal( v0, v3 );
+            v3->ear = Diagonal( v1, v4 );
+            
+            v1->next = v3;
+            v3->prev = v1;
+            vertices = v3;
+
+            n--;
+
+			   printf("Remaining Vertices Count: %d\n",n);
+
+            break;  
+         }
+
+         v2 = v2->next;
+
+      } while ( v2 != vertices );
+
+      if ( !earfound ) {
+
+         printf("Triangulation error:  No ear found.\n");
+
+         tVertex  v;
+         printf("\nCurrent Polygon Vertices:\n");
+         v = vertices;
+         do {                                 
+            printf( "%% Vertex Id=%5d:\tear=%d, (x,y):(%d,%d)\n", v->vnum, v->ear, v->v[X], v->v[Y] );
+            
+            v = v->next;
+         } while ( v != vertices );
+
+         exit(EXIT_FAILURE);
+      }
+   }
+}
+
+void	PrintDiagonal( tVertex a, tVertex b )
+{
+   printf("Diagonal Vertices Ids: (%d,%d)\n", a->vnum, b->vnum );
+   printf("from (%d,%d) to (%d,%d)\n", a->v[X], a->v[Y], b->v[X], b->v[Y] );
+}
+
 
 tVertex   MakeNullVertex( void )
 {
    tVertex  v;
-   
    NEW( v, tsVertex );
    ADD( vertices, v );
    return v;
 }
 
 
-void   PrintPoly( void )
-{
-   tVertex  v;
-   printf("%%Polygon circular list:\n");
-   v = vertices;
-   do {                                 
-      printf( "%% vnum=%5d:\tear=%d\n", v->vnum, v->ear );
-      v = v->next;
-   } while ( v != vertices );
-}
 
 
-void   PrintVertices( void )
-{
-  
-   tVertex  v;
-   int xmin, ymin, xmax, ymax;
-
-  
-   v = vertices;
-   xmin = xmax = v->v[X];
-   ymin = ymax = v->v[Y];
-   do {
-      if      ( v->v[X] > xmax ) xmax = v->v[X];
-      else if ( v->v[X] < xmin ) xmin = v->v[X];
-      if      ( v->v[Y] > ymax ) ymax = v->v[Y];
-      else if ( v->v[Y] < ymin ) ymin = v->v[Y];
-      v = v->next;
-   } while ( v != vertices );
-   
-  
-   printf("%%%%BoundingBox: %d %d %d %d\n", xmin, ymin, xmax, ymax);
-   printf("%%%%EndComments\n");
-   printf(".00 .00 setlinewidth\n");
-   printf("%d %d translate\n", -xmin+72, -ymin+72 );
-  
-
-  
-   printf("\n%% number of vertices = %d\n", nvertices);
-   v = vertices;
-   do {                                 
-      printf( "%% vnum=%5d:\tx=%5d\ty=%5d\n", v->vnum, v->v[X], v->v[Y] );
-      v = v->next;
-   } while ( v != vertices );
-
-  
-   printf("\n%%Polygon:\n");
-   printf("newpath\n");
-   v = vertices;
-   printf("%d\t%d\tmoveto\n", v->v[X], v->v[Y] );
-   v = v->next;
-   do {                                 
-      printf("%d\t%d\tlineto\n", v->v[X], v->v[Y] );
-      v = v->next;
-   } while ( v != vertices );
-   printf("closepath stroke\n");
-
-}
-
-void	PrintDiagonal( tVertex a, tVertex b )
-{
-   printf("%%Diagonal: (%d,%d)\n", a->vnum, b->vnum );
-   printf("%d\t%d\tmoveto\n", a->v[X], a->v[Y] );
-   printf("%d\t%d\tlineto\n", b->v[X], b->v[Y] );
-}
 
 int	AreaPoly2( void )
 {
