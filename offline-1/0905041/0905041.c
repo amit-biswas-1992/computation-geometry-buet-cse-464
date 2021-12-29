@@ -1,14 +1,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
-#define	EXIT_FAILURE 1
+
 #define	X 0
 #define	Y 1
 typedef	enum { FALSE, TRUE } bool;
-
 #define	DIM 2              
 typedef	int tPointi[DIM];  
-
+#define	EXIT_FAILURE 1
 typedef	struct tVertexStructure tsVertex;
 typedef	tsVertex *tVertex;
 
@@ -31,6 +30,7 @@ typedef	tsVertex *tVertex;
 
 #define FREE(p) if (p) {free ((char *) p); p = NULL; }
 
+//basic vertex structure
 struct tVertexStructure {
    int vnum;	
    tPointi v;	
@@ -43,18 +43,15 @@ struct tVertexStructure {
 tVertex	vertices  = NULL;
 int	nvertices = 0;	
 
-
-
-
-int	AreaPoly2();
+//declaration of all functions
+void	ReadVertices();
+void	PrintVertices();
 void	Triangulate();
 void	EarInit();
-bool	Diagonal( tVertex a, tVertex b );
-bool	Diagonalie( tVertex a, tVertex b );
-bool	InCone( tVertex a, tVertex b );
+void	PrintDiagonal( tVertex a, tVertex b );
 
-int     Area2( tPointi a, tPointi b, tPointi c );
-int     AreaSign( tPointi a, tPointi b, tPointi c );
+int   Area2( tPointi a, tPointi b, tPointi c );
+int   AreaSign( tPointi a, tPointi b, tPointi c );
 bool	Xor( bool x, bool y );
 bool	Left( tPointi a, tPointi b, tPointi c );
 bool	LeftOn( tPointi a, tPointi b, tPointi c );
@@ -62,21 +59,17 @@ bool	Collinear( tPointi a, tPointi b, tPointi c );
 bool	Between( tPointi a, tPointi b, tPointi c );
 bool	Intersect( tPointi a, tPointi b, tPointi c, tPointi d );
 bool	IntersectProp( tPointi a, tPointi b, tPointi c, tPointi d );
-
-tVertex	MakeNullVertex();
-void	ReadVertices();
-void	PrintVertices();
-void	PrintDiagonal( tVertex a, tVertex b );
-void	PrintPoly();
-
-
+int	AreaPoly2();
+bool	Diagonal( tVertex a, tVertex b );
+bool	Diagonalie( tVertex a, tVertex b );
+bool	InCone( tVertex a, tVertex b );
 
 int main()
 {
    ReadVertices();
    PrintVertices();
-   printf("Area of Polygon = %g\n", 0.5 * AreaPoly2() );
    Triangulate();
+
    return 0;
 }
 
@@ -85,21 +78,36 @@ int main()
 void   ReadVertices()
 {
    tVertex	v;
-   int		x, y;
-   int		vnum = 0;
-
-   while ( scanf ("%d %d", &x, &y ) != EOF )  {
-      v = MakeNullVertex();
+   
+   int vertexCount = 0;
+   int x, y;
+   printf("-------------------------\n");
+   printf("Step 1: Reading started. Provide input of (x,y) position of vertices.\nTo finish press ctrl+d\n\n");
+   while (scanf("%d %d", &x, &y) != EOF) {
+      NEW(v, tsVertex);
+      v->vnum = vertexCount;
       v->v[X] = x;
       v->v[Y] = y;
-      v->vnum = vnum++;
+      v->ear = FALSE;
+      ADD(vertices, v);
+
+      vertexCount++;
    }
 
-   nvertices = vnum;
 
+   
+
+   nvertices = vertexCount;
+
+   //handle exception
    if (nvertices < 3) {
-      printf("Vertices cannot be less than 3.\n");
+      printf("Total vertices cannot be less than 3.\n");
       exit(EXIT_FAILURE);
+   }
+   else{
+      printf("\nStep 1: Reading completed without error\n");
+      printf("-------------------------\n\n");
+
    }
       
 }
@@ -107,7 +115,9 @@ void   ReadVertices()
 void  PrintVertices()
 {
    tVertex  v;
-   printf("\nTotal Vertices = %d\n", nvertices);
+
+   printf("-------------------------\n");
+   printf("\nStep 2: Print vertices started: \n\nTotal Vertices = %d\n", nvertices);
 
    v = vertices;
    
@@ -115,6 +125,10 @@ void  PrintVertices()
       printf("Vertex Id= %d, position=(x,y): (%d,%d)\n", v->vnum, v->v[X], v->v[Y] );
       v = v->next;
    } while ( v != vertices );
+
+   printf("\nStep 2: Print vertices completed\n");
+   printf("-------------------------\n\n");
+
 
 }
 
@@ -127,7 +141,8 @@ void  Triangulate()
 
    EarInit();
    
-   printf("\nTriangulation started:\n\n");
+   printf("-------------------------\n");
+   printf("\nStep 3: Triangulation started:\n\n");
 
    while ( n > 3 ) {     
      
@@ -167,35 +182,31 @@ void  Triangulate()
 
       } while ( v2 != vertices );
 
+
       if ( !earfound ) {
 
          printf("Triangulation error:  No ear found.\n");
 
          tVertex  v;
+
          printf("\nCurrent Polygon Vertices:\n");
          v = vertices;
-         do {                                 
+         do {    
             printf( "%% Vertex Id=%5d:\tear=%d, (x,y):(%d,%d)\n", v->vnum, v->ear, v->v[X], v->v[Y] );
-            
             v = v->next;
          } while ( v != vertices );
 
          exit(EXIT_FAILURE);
       }
+      
    }
+
+   printf("\nStep 3: Triangulation completed successfully:\n\n");
+   printf("-------------------------\n");
+
 }
 
-tVertex MakeNullVertex()
-{
-   tVertex  v;
-   NEW( v, tsVertex );
-   v->v[X] = 0;
-   v->v[Y] = 0;
-   v->vnum = 0;
-   v->ear = FALSE;
-   ADD( vertices, v );
-   return v;
-}
+
 
 
 void   EarInit()
