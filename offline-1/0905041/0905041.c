@@ -11,6 +11,7 @@ typedef	int tPointi[DIM];
 
 typedef	struct tVertexStructure tsVertex;
 typedef	tsVertex *tVertex;
+
 struct	tVertexStructure {
    int		vnum;	
    tPointi	v;	
@@ -88,7 +89,6 @@ int     Area2( tPointi a, tPointi b, tPointi c )
 
 bool	Xor( bool x, bool y )
 {
-   
    return   !x ^ !y;
 }
 
@@ -161,7 +161,6 @@ bool   Diagonalie( tVertex a, tVertex b )
 {
    tVertex c, c1;
 
-  
    c = vertices;
    do {
       c1 = c->next;
@@ -181,7 +180,6 @@ void   EarInit( void )
 {
    tVertex v0, v1, v2;  
 
-  
    v1 = vertices;
    printf("newpath\n");
    do {
@@ -205,7 +203,7 @@ void   Triangulate( void )
 
    EarInit();
    printf("\nnewpath\n");
-  printf("value of n: %d\n",n);
+   printf("value of n: %d\n",n);
 
    while ( n > 3 ) {     
      
@@ -291,6 +289,7 @@ void   ReadVertices( void )
       v->v[Y] = y;
       v->vnum = vnum++;
    }
+
    nvertices = vnum;
    printf("total no of vervices:%d \n",vnum);
    if (nvertices < 3) 
